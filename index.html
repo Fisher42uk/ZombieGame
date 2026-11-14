@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Call of Duty Zombies: 17 Maps & Dragon-Knight Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body class="text-white">
+
+    <!-- 3D WebGL Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Overlays -->
+    <div id="damage-flash"></div>
+    <div id="env-flash"></div>
+
+    <!-- Center Crosshair -->
+    <div id="crosshair">
+        <div class="crosshair-line" style="width: 14px; height: 2px; left: -20px; top: -1px;"></div>
+        <div class="crosshair-line" style="width: 14px; height: 2px; left: 6px; top: -1px;"></div>
+        <div class="crosshair-line" style="width: 2px; height: 14px; left: -1px; top: -20px;"></div>
+        <div class="crosshair-line" style="width: 2px; height: 14px; left: -1px; top: 6px;"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="transform: translate(-3px, -3px);"></div>
+    </div>
+
+    <!-- Start / Map Selection Menu Overlay -->
+    <div id="start-menu" class="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-md flex flex-col items-center justify-between p-4 md:p-6 overflow-y-auto">
+        <div class="text-center max-w-4xl mt-1">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-bold uppercase tracking-widest mb-2">
+                🎄 17 Maps • 17 Bosses • 17 Hidden Map Secret Weapons • Candy-Cane & Rudolph Laser 🦌
+            </div>
+            <h1 class="font-orbitron text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400">
+                COD ZOMBIES: WONDER ARSENAL 3D
+            </h1>
+            <p class="text-zinc-400 text-xs sm:text-sm mt-1">
+                Deploy into 17 3D Maps—including the new <b>Christmas Workshop Map</b> with the <b>Candy-Cane Gun</b> & <b>Rudolph Red-Nose Laser</b>!
+            </p>
+        </div>
+
+        <!-- 17 Map Selector Grid -->
+        <div class="max-w-5xl w-full my-3">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-400">SELECT DEPLOYMENT MAP (17 MAPS + 17 UNIQUE BOSSES)</span>
+                <span id="selected-map-badge" class="text-xs font-bold text-amber-400">Selected: 17. Santa's Slay-Workshop (Christmas Map)</span>
+            </div>
+            <div id="menu-map-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Controls Info & Launch Button -->
+        <div class="max-w-4xl w-full flex flex-col sm:flex-row items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5">
+            <div class="text-[11px] text-zinc-300 space-y-0.5 text-center sm:text-left">
+                <div><span class="text-amber-400 font-bold">Desktop:</span> WASD Move • Mouse Aim/Shoot • <b>[R]</b> Reload • <b>[Q/E]</b> Cycle Gun • <b>[F]</b> Interact • <b>[V]</b> Armory (Pauses) • <b>[M]</b> Map Menu (Pauses) • <b>[B]</b> Boss</div>
+                <div><span class="text-cyan-400 font-bold">Touchscreen:</span> Dual Virtual Thumbsticks • Tap <b>FIRE / AUTO / ARMORY / MAPS / USE / 🐉 DRAGON</b> buttons on screen</div>
+            </div>
+            <button id="start-game-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-orbitron font-black text-base bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-[0_0_25px_rgba(16,185,129,0.5)] transition transform hover:scale-105">
+                🚀 DEPLOY INTO MAP
+            </button>
+        </div>
+    </div>
+
+    <!-- In-Game Map Selection Modal ([M]) -->
+    <div id="map-select-modal" class="hidden fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-md flex flex-col items-center justify-between p-4 md:p-6 overflow-y-auto">
+        <div class="text-center max-w-4xl mt-1">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase tracking-widest mb-2">
+                ⏸️ GAME PAUSED • TACTICAL MAP DEPLOYMENT MENU [M]
+            </div>
+            <h2 class="font-orbitron text-2xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-300 to-cyan-400">
+                SELECT DEPLOYMENT MAP
+            </h2>
+            <p class="text-zinc-400 text-xs sm:text-sm mt-1">
+                Choose any of the 17 3D Maps below to deploy immediately, or click <b>Resume Current Map</b> to unpause!
+            </p>
+        </div>
+
+        <div class="max-w-5xl w-full my-3">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-400">17 PLAYABLE MAPS & BOSS ARENAS</span>
+                <span id="modal-selected-map-badge" class="text-xs font-bold text-amber-400">Current: 17. Santa's Slay-Workshop 🎄</span>
+            </div>
+            <div id="pause-map-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-[52vh] overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="max-w-4xl w-full flex flex-col sm:flex-row items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5">
+            <div class="text-xs text-zinc-300 text-center sm:text-left">
+                <div><span class="text-emerald-400 font-bold">⏸️ Game Paused:</span> All zombies, bosses, and timers are frozen while browsing maps.</div>
+                <div class="text-[11px] text-zinc-400">Tip: Your unlocked weapons, Essence points, and Perks carry over when switching maps!</div>
+            </div>
+            <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                <button id="resume-map-modal-btn" class="w-1/2 sm:w-auto px-5 py-3 rounded-xl font-orbitron font-bold text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600">
+                    ✕ RESUME [M]
+                </button>
+                <button id="deploy-selected-map-btn" class="w-1/2 sm:w-auto px-6 py-3 rounded-xl font-orbitron font-black text-xs sm:text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+                    🚀 DEPLOY TO MAP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+        <h2 class="font-orbitron text-4xl md:text-6xl font-black text-red-500 mb-2">YOU GOT DERPED!</h2>
+        <p id="game-over-stats" class="text-zinc-300 text-lg mb-6">Survived to Wave 1 • Score: £500</p>
+        <button id="restart-btn" class="px-8 py-4 rounded-xl font-orbitron font-black text-lg bg-red-600 hover:bg-red-500 text-white shadow-[0_0_25px_rgba(220,38,38,0.6)]">
+            🔄 PLAY AGAIN
+        </button>
+    </div>
+
+    <!-- Direct Weapon Armory Modal ([V]) -->
+    <div id="armory-modal" class="hidden fixed inset-0 z-50 bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-zinc-800 bg-zinc-950">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-orbitron text-lg md:text-xl font-black text-amber-400">🔫 DIRECT WEAPON ARMORY & ACHIEVEMENTS</h2>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-black uppercase tracking-wider">⏸️ GAME PAUSED</span>
+                    </div>
+                    <p class="text-xs text-zinc-400">Start with the M1911 Pistol! Pull Wonder Weapons from the Mystery Box (£950) first to unlock them here, and slay Map Bosses for Mythic Weapons!</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="reset-unlocks-btn" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-red-950 text-zinc-300 text-xs font-bold border border-zinc-700">
+                        Reset Unlocks
+                    </button>
+                    <button id="close-armory-btn" class="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs">
+                        ✕ RESUME GAME [V]
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 overflow-y-auto space-y-5">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-emerald-400">🎁 WONDER WEAPONS (LOCKED UNTIL PULLED FROM MYSTERY BOX FIRST)</span>
+                        <span id="armory-wonder-progress" class="text-xs font-bold text-cyan-300">1 / 13 Wonder Weapons Unlocked</span>
+                    </div>
+                    <div id="armory-wonder-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5"></div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-pink-400">🕵️ 17 HIDDEN MAP SECRET WEAPONS (FIND SECRET PASSAGE ON EACH MAP)</span>
+                        <span id="armory-secret-progress" class="text-xs font-bold text-pink-300">0 / 17 Secret Weapons Found</span>
+                    </div>
+                    <div id="armory-secret-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5"></div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-amber-400">👑 17 MYTHIC BOSS SPECIAL WEAPONS (LOCKED UNTIL BOSS SLAIN)</span>
+                        <span id="armory-boss-progress" class="text-xs font-bold text-purple-300">0 / 17 Boss Weapons Unlocked</span>
+                    </div>
+                    <div id="armory-boss-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5"></div>
+                </div>
+
+                <div class="bg-zinc-950/90 border border-amber-500/40 rounded-xl p-3.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-yellow-300">🏆 TRANSCENDENT ACHIEVEMENT WEAPON (COMPLETE ALL 5/5 TROPHIES TO UNLOCK)</span>
+                        <span id="armory-ach-progress" class="text-xs font-bold text-amber-400">0 / 5 Trophies Unlocked</span>
+                    </div>
+                    <div id="armory-ach-weapon" class="mb-3"></div>
+                    <div id="armory-ach-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD Layer -->
+    <div id="hud" class="fixed inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 sm:p-5">
+        <!-- Top Bar -->
+        <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="flex flex-col gap-1.5 pointer-events-auto">
+                <div class="flex items-center gap-2 bg-zinc-950/85 border border-zinc-800 px-3 py-1.5 rounded-xl backdrop-blur-md">
+                    <div class="font-orbitron font-black text-red-500 text-base sm:text-xl">
+                        WAVE <span id="wave-num">1</span>
+                    </div>
+                    <span class="text-zinc-600">|</span>
+                    <div class="text-xs font-bold text-zinc-300">
+                        ZOMBIES: <span id="zombies-left" class="text-amber-400">6</span>
+                    </div>
+                    <span class="text-zinc-600">|</span>
+                    <select id="hud-map-select" class="bg-zinc-900 text-emerald-300 text-xs font-bold px-2 py-1 rounded border border-zinc-700 outline-none cursor-pointer"></select>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button id="hud-armory-btn" class="px-2.5 py-1 rounded-lg bg-purple-950/90 hover:bg-purple-900 border border-purple-400/60 text-[11px] font-extrabold text-purple-200 shadow">
+                        🔫 WEAPON ARMORY <span id="armory-unlock-badge" class="text-amber-300 ml-1">[V]</span>
+                    </button>
+                    <button id="hud-maps-btn" class="px-2.5 py-1 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-400/60 text-[11px] font-extrabold text-emerald-200 shadow">
+                        🗺️ SELECT MAP [M]
+                    </button>
+                    <button id="hud-boss-btn" class="px-2.5 py-1 rounded-lg bg-red-950/90 hover:bg-red-900 border border-red-400/60 text-[11px] font-extrabold text-red-200 shadow">
+                        ⚠️ SUMMON BOSS [B]
+                    </button>
+                    <button id="hud-touch-toggle" class="px-2.5 py-1 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-400/60 text-[11px] font-extrabold text-cyan-200 shadow">
+                        📱 TOUCH HUD: ON [T]
+                    </button>
+                </div>
+            </div>
+
+            <!-- Top Center: Active Boss Health Bar & Notification Banner -->
+            <div class="flex flex-col items-center gap-1.5 mx-auto">
+                <div id="boss-hud" class="hidden w-72 sm:w-96 bg-zinc-950/90 border-2 border-red-500/80 rounded-xl p-2.5 shadow-[0_0_25px_rgba(239,68,68,0.5)]">
+                    <div class="flex items-center justify-between text-xs font-black">
+                        <span id="boss-name-text" class="text-amber-300 font-orbitron">⚔️ SIR LANCELOT</span>
+                        <span id="boss-hp-text" class="text-red-400">4500 / 4500 HP</span>
+                    </div>
+                    <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden mt-1 border border-zinc-700">
+                        <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-150" style="width: 100%;"></div>
+                    </div>
+                    <div id="boss-ability-text" class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-1 text-center">
+                        ABILITY: STRAIGHT SWORD CUT & DRAGON SUMMON
+                    </div>
+                </div>
+
+                <div id="miniboss-hud" class="hidden w-64 sm:w-80 bg-zinc-950/90 border-2 border-cyan-400/80 rounded-xl p-2 shadow-[0_0_20px_rgba(34,211,238,0.45)]">
+                    <div class="flex items-center justify-between text-[11px] font-black">
+                        <span id="miniboss-name-text" class="text-cyan-300 font-orbitron">🦾 PANZER SOLDAT</span>
+                        <span id="miniboss-hp-text" class="text-emerald-300">1600 / 1600 HP</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-zinc-800 rounded-full overflow-hidden mt-1 border border-zinc-700">
+                        <div id="miniboss-hp-bar" class="h-full bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+                    </div>
+                    <div class="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5 text-center">
+                        ⚡ MINI-BOSS (EVERY 5 ROUNDS) • DROPS MAX AMMO + £1,500
+                    </div>
+                </div>
+
+                <div id="boss-banner" class="hidden bg-zinc-950/95 border border-amber-400 px-4 py-2 rounded-xl text-center shadow-2xl">
+                    <div id="boss-banner-title" class="font-orbitron font-black text-amber-300 text-xs sm:text-sm"></div>
+                    <div id="boss-banner-sub" class="text-[11px] text-zinc-300"></div>
+                </div>
+            </div>
+
+            <!-- Top Right: Points & Active Perks -->
+            <div class="flex flex-col items-end gap-1.5">
+                <div class="bg-zinc-950/85 border border-amber-500/40 px-3.5 py-1.5 rounded-xl backdrop-blur-md text-right">
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-zinc-400">ESSENCE POINTS</div>
+                    <div class="font-orbitron text-xl sm:text-2xl font-black text-amber-400">£<span id="score-val">1500</span></div>
+                </div>
+                <div id="perks-row" class="flex items-center gap-1.5"></div>
+            </div>
+        </div>
+
+        <!-- Center Interaction Prompt Banner -->
+        <div class="flex flex-col items-center justify-center my-auto pointer-events-auto gap-2">
+            <div id="interact-prompt" class="hidden cursor-pointer bg-amber-950/95 border-2 border-amber-400 text-amber-200 px-5 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-[0_0_25px_rgba(251,191,36,0.55)] animate-pulse">
+                Press [F] or TAP HERE to Interact
+            </div>
+            <button id="context-interact-btn" class="hidden touch-btn px-6 py-3.5 rounded-2xl border-2 border-emerald-400 bg-emerald-950/95 text-emerald-200 font-orbitron font-black text-xs sm:text-sm shadow-[0_0_30px_rgba(16,185,129,0.75)] active:scale-95">
+                ✋ TAP TO INTERACT [F]
+            </button>
+        </div>
+
+        <!-- Bottom Bar: Health & Equipped Weapon Info -->
+        <div class="flex items-end justify-between gap-2">
+            <div class="bg-zinc-950/85 border border-zinc-800 p-3 rounded-xl backdrop-blur-md w-44 sm:w-64">
+                <div class="flex items-center justify-between text-xs font-bold mb-1">
+                    <span class="text-emerald-400">❤️ PLAYER HP</span>
+                    <span id="hp-text" class="text-white">100 / 100</span>
+                </div>
+                <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
+                    <div id="hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-150" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950/85 border border-zinc-800 p-3 rounded-xl backdrop-blur-md text-right min-w-[180px] sm:min-w-[260px]">
+                <div class="flex items-center justify-end gap-1.5">
+                    <span id="pap-badge" class="hidden px-1.5 py-0.5 rounded bg-fuchsia-600 text-[9px] font-black uppercase tracking-wider text-white">⚡ PACKED</span>
+                    <span id="weapon-name" class="font-orbitron font-extrabold text-xs sm:text-sm text-cyan-300">M1911 Starting Pistol</span>
+                </div>
+                <div class="font-orbitron text-2xl sm:text-3xl font-black text-white mt-0.5">
+                    <span id="ammo-current">8</span> <span class="text-zinc-500 text-base">/</span> <span id="ammo-reserve" class="text-base text-zinc-400">64</span>
+                </div>
+                <div id="dragon-ability-badge" class="hidden mt-1 pt-1 border-t border-amber-500/40 text-[10px] font-black text-amber-300 uppercase tracking-wider">
+                    🐉 [C / RMB] DRAGON: <span id="dragon-cooldown-text" class="text-emerald-400">READY</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Touchscreen Overlay Controls (Responsive spacing to prevent narrow-screen overlap) -->
+    <div id="touch-controls" class="fixed inset-0 pointer-events-none z-30">
+        <!-- Left Virtual Move Thumbstick -->
+        <div id="joystick-zone" class="fixed bottom-20 left-3 sm:left-5 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-900/60 border-2 border-slate-500/50 backdrop-blur-sm flex items-center justify-center pointer-events-auto">
+            <div id="joystick-knob" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-400/80 border-2 border-white shadow-lg"></div>
+            <span class="absolute -top-5 text-[10px] font-bold text-slate-300 uppercase tracking-wider">MOVE</span>
+        </div>
+
+        <!-- Right Virtual Look/Aim Thumbstick -->
+        <div id="look-joystick-zone" class="fixed bottom-20 right-28 sm:right-36 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-900/55 border-2 border-cyan-400/45 backdrop-blur-sm flex items-center justify-center pointer-events-auto">
+            <div id="look-joystick-knob" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-cyan-400/80 border-2 border-white shadow-lg"></div>
+            <span class="absolute -top-5 text-[10px] font-bold text-cyan-300 uppercase tracking-wider">🎯 AIM</span>
+        </div>
+
+        <!-- Left-Hand Claw Fire & Interact -->
+        <button id="touch-lfire" class="touch-btn fixed bottom-52 left-4 sm:left-8 w-14 h-14 sm:w-16 sm:h-16 text-[10px] sm:text-xs border-red-400 text-red-200 bg-red-950/85">
+            🔥 L-FIRE
+        </button>
+
+        <button id="touch-interact" class="touch-btn fixed bottom-52 left-20 sm:left-28 w-28 sm:w-36 h-14 text-[10px] sm:text-xs border-2 border-amber-400 text-amber-200 bg-amber-950/95 shadow-[0_0_24px_rgba(251,191,36,0.55)] px-2 text-center leading-tight">
+            ✋ INTERACT [F]<br><span id="touch-interact-sub" class="text-[8px] sm:text-[9px] text-amber-300 font-semibold">Box • PaP • Crates</span>
+        </button>
+
+        <!-- Right-Hand Action Buttons -->
+        <button id="touch-fire" class="touch-btn fixed bottom-24 right-3 sm:right-5 w-20 h-20 sm:w-24 sm:h-24 text-xs sm:text-sm border-red-500 text-white bg-red-600/85 shadow-[0_0_25px_rgba(239,68,68,0.65)]">
+            🔥 FIRE
+        </button>
+        <button id="touch-autofire" class="touch-btn fixed bottom-48 right-3 sm:right-6 w-20 h-10 sm:h-11 text-[10px] border-amber-400 text-amber-200">
+            ⚡ AUTO: OFF
+        </button>
+        <button id="touch-reload" class="touch-btn fixed bottom-48 right-24 sm:right-28 w-14 sm:w-16 h-10 sm:h-11 text-[10px] border-blue-400 text-blue-200">
+            🔄 RLD
+        </button>
+        <button id="touch-switch" class="touch-btn fixed bottom-48 right-40 sm:right-48 w-14 sm:w-16 h-10 sm:h-11 text-[10px] border-emerald-400 text-emerald-200">
+            🔀 GUN
+        </button>
+        <button id="touch-jump" class="touch-btn fixed right-3 sm:right-6 w-16 h-10 sm:h-11 text-[10px] border-slate-400 text-slate-200" style="bottom: 248px;">
+            ⬆️ JUMP
+        </button>
+        <button id="touch-armory" class="touch-btn fixed right-20 sm:right-24 w-20 h-10 sm:h-11 text-[10px] border-purple-400 text-purple-200" style="bottom: 248px;">
+            🔫 ARMORY
+        </button>
+        <button id="touch-maps" class="touch-btn fixed right-42 sm:right-48 w-20 h-10 sm:h-11 text-[10px] border-emerald-400 text-emerald-200" style="bottom: 300px; right: 11rem;">
+            🗺️ MAPS
+        </button>
+        <button id="touch-dragon" class="touch-btn fixed right-42 sm:right-48 w-24 h-11 text-[11px] border-amber-400 text-amber-200 bg-red-950/90 hidden shadow-[0_0_18px_rgba(245,158,11,0.65)]" style="bottom: 248px; right: 11rem;">
+            🐉 DRAGON
+        </button>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
